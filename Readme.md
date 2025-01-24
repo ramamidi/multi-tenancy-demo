@@ -1,74 +1,66 @@
-# University MultiTenant Application
+# Demo DB level Multi-Tenancy application
 
-This is spring boot 3 application uses hibernate multi tenant architecture with database level multi tenancy and postgres as database.
-Small University Application with few entities and ERD as follows
+This project showcases how to achieve multi-tenancy at DB level(i.e, each tenant having their separate DB in a Saas based application) 
+using Java & Spring boot.
 
-![alt ERD for database] (![img.png](img.png))
+Tech Stack:
+- Java 17
+- Spring Boot 3
+- Maven
+- Postgres DB
 
 ## MultiTenant Architecture
-
 - Class that implements MultiTenantConnectionProvider
 - CurrentTenant Resolver
 - To save and return current Tenant
 - Fetch tenant id from header within filter and save to Thread
 - While constructing EntityTransactionManager bean, multiTenantConnectionProvider, CurrentTenantResolver needs to be configured.
 
-## Code
-```
-@Bean
-    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
-        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(dataSource);
-        em.setPackagesToScan("com.multitenant.demo.database.entities");
-        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.multiTenancy", "DATABASE");
-        properties.put("hibernate.multi_tenant_connection_provider", dataSourceBasedMultiTenantConnectionProvider());
-        properties.put("hibernate.tenant_identifier_resolver", new CurrentTenantIdentifierResolverImpl());
-        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
-
-        em.setJpaPropertyMap(properties);
-        return em;
-    }
-```
-
-Swagger is configured with application.
-
 ## Build and deploy
-### Prequisites
-- Install maven latest and Java 17 to your system.
-- Postgres needs to installed in local system and create database called default.
-- tenant_datasources table is where all tenants are stored, this table can be created within default database and add databases to your prefrences.
-- tables can be created using createTables.sql file present in sourcecode.
-
-Table can be created using following insert statement
+### Prerequisites
+- JDK 17
+- Maven latest version
+- Postgres DB installed and running on your machine
+- A database named ```default``` created
+- Run the following sql to create a table named tenant_datasources in the default db
 ```sh
 CREATE TABLE tenant_datasources (
-    tenant_datasource_id SERIAL PRIMARY KEY,
-    tenant_identifier VARCHAR(100) UNIQUE,
-    datasource_url VARCHAR(300),
-    username VARCHAR(100),
-    password VARCHAR(100),
-    active BOOLEAN
+tenant_datasource_id SERIAL PRIMARY KEY,
+tenant_identifier VARCHAR(100) UNIQUE,
+datasource_url VARCHAR(300),
+username VARCHAR(100),
+password VARCHAR(100),
+active BOOLEAN
 );
 ```
-Inserting tenant datasources into above table using following dml statements
-```sh
-insert into tenant_datasources (tenant_identifier,datasource_url, username, password, active) values
-('universityA', 'jdbc:postgresql://localhost:5432/universityA', 'postgres', 'postgres', true);
-insert into tenant_datasources (tenant_identifier,datasource_url, username, password, active) values
-('universityB', 'jdbc:postgresql://localhost:5432/universityB', 'postgres', 'postgres', true);
+- update the application.properties file with your postgres username and password
+```
+spring.datasource.username=<TODO: your-potgres username>
+spring.datasource.password=<TODO: your-potgres password>
 ```
 
-### Build Sorce
+### Build Source
+- If your default IDE is intellij: Import the project -> Maven build
+- On command line:
 To build source code use the below command
 ```sh
     mvn clean package -DskipTest
 ```
 
 ### Deploy
+- If your default IDE is intellij: Run the MultiTenancyDemoApplication class
+- On command line:
 To deploy the application use the below command
 ```sh
     mvn spring-boot:run
 ```
-Once deployed application can be accessible at localhost using post 8080.
+URL to access the app:
+http://localhost:8080/multi-tenancy-demo/swagger-ui/index.html#
+
+### How to use the demo application
+- Once the swagger is successfully accessible:
+- Use the /tenant POST api to create a tenant. This creates a tenant 
+and a separate DB for the tenant with the tenantId 
+- Use the tenant/initiate api to initiate the tenantDB 
+with the required resource table to perform CRUD operation
+- Use the GET, POST, PUT, DELETE end-points under resource with tenant created to access data
